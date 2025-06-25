@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.1] - 2025-01-25
+
+### Changed
+- Documentation updated to English as primary language
+- Added Chinese translation as README.zh-CN.md
+
 ## [1.1.0] - 2025-01-25
 
 ### Added
@@ -36,5 +42,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Pre-configured Wrangler for easy deployment
 - Production-ready middleware (CORS, logging, error handling)
 
+[1.1.1]: https://github.com/leeguooooo/create-worker-app/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/leeguooooo/create-worker-app/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/leeguooooo/create-worker-app/releases/tag/v1.0.0
