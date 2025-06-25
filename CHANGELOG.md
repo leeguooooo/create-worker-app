@@ -5,13 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.1.1] - 2025-01-25
+## [1.1.1] - 2025-06-25
 
 ### Changed
 - Documentation updated to English as primary language
 - Added Chinese translation as README.zh-CN.md
 
-## [1.1.0] - 2025-01-25
+## [1.1.0] - 2025-06-25
 
 ### Added
 - 🚀 Interactive route generator with 4 templates (Basic/CRUD/Auth/Webhook)
