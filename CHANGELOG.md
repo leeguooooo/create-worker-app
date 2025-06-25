@@ -24,7 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - TypeScript diagnostics issues in generate-route.js
 
-## [1.0.0] - 2025-01-25
+## [1.0.0] - 2025-06-25
 
 ### Added
 - Initial release of create-worker-app
