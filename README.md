@@ -31,6 +31,14 @@ npm install -g create-worker-app
 create-worker-app my-app
 ```
 
+### Alternative: Install from GitHub Packages
+
+This package is also available on [GitHub Packages](./docs/GITHUB_PACKAGES.md):
+
+```bash
+npx @leeguooooo/create-worker-app@latest my-app
+```
+
 ## 🎮 Interactive Setup
 
 The CLI will guide you through the setup:

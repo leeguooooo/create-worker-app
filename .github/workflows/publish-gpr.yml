@@ -1,0 +1,47 @@
+name: Publish to GitHub Packages
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  publish-gpr:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        registry-url: 'https://npm.pkg.github.com'
+        scope: '@leeguooooo'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Configure package.json for GitHub Packages
+      run: |
+        # Create a copy of package.json for GitHub Packages
+        cp package.json package.json.backup
+        # Update package name to include scope
+        node -e "
+        const pkg = require('./package.json');
+        pkg.name = '@leeguooooo/create-worker-app';
+        pkg.publishConfig = {
+          registry: 'https://npm.pkg.github.com'
+        };
+        require('fs').writeFileSync('package.json', JSON.stringify(pkg, null, 2));
+        "
+    
+    - name: Publish to GitHub Packages
+      run: npm publish
+      env:
+        NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Restore original package.json
+      run: mv package.json.backup package.json

@@ -31,6 +31,14 @@ npm install -g create-worker-app
 create-worker-app my-app
 ```
 
+### 备选方案：从 GitHub Packages 安装
+
+本包也发布在 [GitHub Packages](./docs/GITHUB_PACKAGES.md)：
+
+```bash
+npx @leeguooooo/create-worker-app@latest my-app
+```
+
 ## 🎮 交互式创建
 
 运行命令后，CLI 会引导你完成项目配置：
