@@ -9,7 +9,12 @@ const minimist = require('minimist');
 const argv = minimist(process.argv.slice(2));
 
 async function init() {
-  console.log(cyan('\n🚀 Create Worker App\n'));
+  // Check if running in CI/test environment
+  const isCI = process.env.CI || process.env.NODE_ENV === 'test';
+  
+  if (!isCI) {
+    console.log(cyan('\n🚀 Create Worker App\n'));
+  }
 
   let targetDir = argv._[0];
   let projectName = targetDir;
