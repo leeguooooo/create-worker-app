@@ -1,0 +1,16 @@
+{
+  "generator": "create-worker-app",
+  "repository": "https://github.com/leeguooooo/create-worker-app",
+  "documentation": "https://github.com/leeguooooo/create-worker-app#readme",
+  "templates": {
+    "basic": "Basic API endpoint",
+    "crud": "CRUD Resource with 5 RESTful endpoints",
+    "auth": "JWT authenticated endpoint",
+    "webhook": "External webhook receiver"
+  },
+  "commands": {
+    "generate:route": "Generate new API routes interactively",
+    "dev": "Start local development server",
+    "deploy": "Deploy to Cloudflare Workers"
+  }
+}

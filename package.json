@@ -1,0 +1,47 @@
+{
+  "name": "create-worker-app",
+  "version": "1.1.0",
+  "description": "Create Cloudflare Workers apps with Hono.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/leeguooooo/create-worker-app.git"
+  },
+  "homepage": "https://github.com/leeguooooo/create-worker-app#readme",
+  "bugs": {
+    "url": "https://github.com/leeguooooo/create-worker-app/issues"
+  },
+  "bin": {
+    "create-worker-app": "./index.js"
+  },
+  "files": [
+    "index.js",
+    "template"
+  ],
+  "scripts": {
+    "test": "jest",
+    "test:watch": "jest --watch"
+  },
+  "keywords": [
+    "cloudflare",
+    "workers",
+    "hono",
+    "scaffold",
+    "generator",
+    "create-app",
+    "cli",
+    "typescript"
+  ],
+  "author": "leeguooooo",
+  "license": "MIT",
+  "dependencies": {
+    "prompts": "^2.4.2",
+    "kolorist": "^1.8.0",
+    "minimist": "^1.2.8"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0"
+  }
+}
