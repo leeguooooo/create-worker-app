@@ -204,6 +204,15 @@ API_KEY=your-api-key-here
   readmeContent = readmeContent.replace(/\{\{name\}\}/g, projectName);
   readmeContent = readmeContent.replace(/\{\{description\}\}/g, answers.description || 'A Cloudflare Worker application');
   fs.writeFileSync(path.join(projectPath, 'README.md'), readmeContent);
+  
+  // Update src/lib/openapi.ts - replace placeholders
+  const openApiPath = path.join(projectPath, 'src/lib/openapi.ts');
+  if (fs.existsSync(openApiPath)) {
+    let openApiContent = fs.readFileSync(openApiPath, 'utf8');
+    openApiContent = openApiContent.replace(/\{\{name\}\}/g, projectName);
+    openApiContent = openApiContent.replace(/\{\{description\}\}/g, answers.description || 'A Cloudflare Worker application');
+    fs.writeFileSync(openApiPath, openApiContent);
+  }
 
   // Update src/index.ts based on options
   let indexContent = fs.readFileSync(path.join(projectPath, 'src/index.ts'), 'utf8');
