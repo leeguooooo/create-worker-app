@@ -5,8 +5,40 @@ const path = require('path');
 const prompts = require('prompts');
 const { red, green, yellow, blue, cyan } = require('kolorist');
 const minimist = require('minimist');
+const { execSync } = require('child_process');
 
 const argv = minimist(process.argv.slice(2));
+
+// Detect package manager
+function detectPackageManager() {
+  const userAgent = process.env.npm_config_user_agent || '';
+  
+  if (userAgent.includes('pnpm')) {
+    return 'pnpm';
+  } else if (userAgent.includes('yarn')) {
+    return 'yarn';
+  } else if (userAgent.includes('bun')) {
+    return 'bun';
+  }
+  
+  // Fallback: check if pnpm/yarn/bun are installed
+  try {
+    execSync('pnpm --version', { stdio: 'ignore' });
+    return 'pnpm';
+  } catch {}
+  
+  try {
+    execSync('yarn --version', { stdio: 'ignore' });
+    return 'yarn';
+  } catch {}
+  
+  try {
+    execSync('bun --version', { stdio: 'ignore' });
+    return 'bun';
+  } catch {}
+  
+  return 'npm';
+}
 
 async function init() {
   // Check if running in CI/test environment
@@ -74,6 +106,12 @@ async function init() {
       name: 'useAuth',
       message: 'Include authentication middleware?',
       initial: false
+    },
+    {
+      type: 'confirm',
+      name: 'installDeps',
+      message: 'Install dependencies now?',
+      initial: true
     }
   ];
 
@@ -226,10 +264,30 @@ API_KEY=your-api-key-here
 
   fs.writeFileSync(path.join(projectPath, 'src/index.ts'), indexContent);
 
+  // Detect package manager
+  const packageManager = detectPackageManager();
+  
   console.log(green('✅ Project created successfully!\n'));
+  
+  // Auto install dependencies if requested
+  if (answers.installDeps) {
+    console.log(blue('📦 Installing dependencies...\n'));
+    try {
+      execSync(`${packageManager} install`, {
+        cwd: projectPath,
+        stdio: 'inherit'
+      });
+      console.log(green('\n✅ Dependencies installed successfully!\n'));
+    } catch (error) {
+      console.log(yellow('\n⚠️  Failed to install dependencies. Please install manually.\n'));
+    }
+  }
+  
   console.log('Next steps:\n');
   console.log(cyan(`  cd ${targetDir}`));
-  console.log(cyan('  npm install'));
+  if (!answers.installDeps) {
+    console.log(cyan(`  ${packageManager} install`));
+  }
   
   // Show service setup instructions
   if (features.length > 0) {
@@ -261,7 +319,7 @@ API_KEY=your-api-key-here
     console.log('    2. For production: wrangler secret put JWT_SECRET --env production');
   }
   
-  console.log(cyan('\n  npm run dev\n'));
+  console.log(cyan(`  ${packageManager} run dev\n`));
 
   if (answers.useOpenAPI) {
     console.log(yellow('📚 API documentation will be available at http://localhost:8787/docs\n'));

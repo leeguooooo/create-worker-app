@@ -12,6 +12,8 @@
 - 🛠️ **智能路由生成器** - 交互式 CLI 快速生成 CRUD、Auth、Webhook 等模板
 - 🎯 **生产就绪** - 内置错误处理、CORS、日志等中间件
 - 🚀 **一键部署** - 预配置 Wrangler，支持多环境部署
+- 🤖 **Claude Code 集成** - AI 驱动开发，上下文感知（CLAUDE.md）
+- ☁️ **Cloudflare 服务** - 内置支持 D1、KV、R2、Durable Objects、Queues
 
 ## 🏃‍♂️ 快速开始
 
@@ -47,14 +49,42 @@ npx @leeguooooo/create-worker-app@latest my-app
 🚀 Create Worker App
 
 ✔ Project name: my-awesome-api
-✔ Project description: A high-performance API service
-✔ Will you need database configuration? … No
+✔ Project description: 高性能 API 服务
+✔ Select Cloudflare services to use: 
+  ◯ D1 Database (SQLite)
+  ◯ KV Storage
+  ◯ R2 Object Storage
+  ◯ Durable Objects
+  ◯ Queues
 ✔ Include OpenAPI/Swagger documentation? … Yes
+✔ Include authentication middleware? … No
 
 📁 Creating project...
 
 ✅ Project created successfully!
 ```
+
+## 🆕 v1.2.0 新功能
+
+### 🤖 Claude Code 集成
+每个生成的项目现在包含：
+- **CLAUDE.md** - AI 上下文文件，让 Claude Code 更好地理解你的项目
+- **INITIAL.md** - 项目需求模板
+- 智能代码生成，AI 感知
+
+### ☁️ Cloudflare 服务支持
+- **D1 Database** - 边缘 SQLite 数据库
+- **KV Storage** - 键值对存储
+- **R2 Storage** - S3 兼容对象存储
+- **Durable Objects** - 有状态无服务器
+- **Queues** - 消息队列
+
+### 🔧 改进
+- 修复模板占位符替换
+- 更好的依赖管理
+- 使用 `.dev.vars` 代替 `.env`
+- 优雅的取消操作处理
+- 详细的服务设置说明
 
 ## 🏗️ 项目结构
 
@@ -122,6 +152,27 @@ Created endpoints:
 - DELETE /api/products/{id} - Delete product
 ```
 
+## 🤖 与 Claude Code 协作
+
+生成的项目包含 AI 驱动的开发支持：
+
+### CLAUDE.md
+为 Claude Code 提供项目上下文：
+- 项目结构指南
+- 代码风格约定
+- Cloudflare Workers 最佳实践
+- 开发命令
+
+### INITIAL.md
+定义项目需求的模板：
+- 功能规格
+- API 设计
+- 数据模型
+- 环境变量
+- 外部 API 和文档
+
+只需在 Claude Code 中打开你的项目，它就会自动理解你的代码库结构和需求！
+
 ## 🚀 开发和部署
 
 ### 本地开发
@@ -156,28 +207,55 @@ npm run deploy:production
 
 ## 🔧 配置选项
 
-### 数据库支持
+### Cloudflare 服务
 
-如果选择了数据库配置，会生成 `.env.example`：
+选择 Cloudflare 服务后，`wrangler.toml` 会自动配置：
 
-```env
-DB_HOST=
-DB_PORT=
-DB_NAME=
-DB_USER=
-DB_PASSWORD=
+```toml
+# D1 数据库
+[[d1_databases]]
+binding = "DB"
+database_name = "my-app-db"
+database_id = "YOUR_DATABASE_ID"
+
+# KV 命名空间
+[[kv_namespaces]]
+binding = "KV"
+id = "YOUR_KV_NAMESPACE_ID"
+
+# R2 存储桶
+[[r2_buckets]]
+binding = "BUCKET"
+bucket_name = "my-app-bucket"
 ```
 
-### 环境变量类型
+### 环境变量
 
-所有环境变量都有完整的 TypeScript 类型定义：
+本地开发密钥存储在 `.dev.vars`：
+
+```bash
+# 复制示例文件
+cp .dev.vars.example .dev.vars
+
+# 生产环境
+wrangler secret put JWT_SECRET --env production
+```
+
+### 类型安全
+
+所有绑定和环境变量都有完整类型：
 
 ```typescript
 // src/types/env.ts
 export interface Env {
-  // 你的环境变量
-  API_KEY: string;
-  DB_URL?: string;
+  // Cloudflare 绑定
+  DB?: D1Database;
+  KV?: KVNamespace;
+  BUCKET?: R2Bucket;
+  
+  // 环境变量
+  JWT_SECRET?: string;
+  API_KEY?: string;
 }
 ```
 

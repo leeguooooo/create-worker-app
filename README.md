@@ -12,6 +12,8 @@
 - 🛠️ **Smart Route Generator** - Interactive CLI for creating CRUD, Auth, Webhook templates
 - 🎯 **Production Ready** - Built-in error handling, CORS, logging middleware
 - 🚀 **One-Click Deploy** - Pre-configured Wrangler for multi-environment deployment
+- 🤖 **Claude Code Integration** - AI-powered development with context awareness (CLAUDE.md)
+- ☁️ **Cloudflare Services** - Built-in support for D1, KV, R2, Durable Objects, Queues
 
 ## 🏃‍♂️ Quick Start
 
@@ -48,13 +50,41 @@ The CLI will guide you through the setup:
 
 ✔ Project name: my-awesome-api
 ✔ Project description: A high-performance API service
-✔ Will you need database configuration? … No
+✔ Select Cloudflare services to use: 
+  ◯ D1 Database (SQLite)
+  ◯ KV Storage
+  ◯ R2 Object Storage
+  ◯ Durable Objects
+  ◯ Queues
 ✔ Include OpenAPI/Swagger documentation? … Yes
+✔ Include authentication middleware? … No
 
 📁 Creating project...
 
 ✅ Project created successfully!
 ```
+
+## 🆕 What's New in v1.2.0
+
+### 🤖 Claude Code Integration
+Each generated project now includes:
+- **CLAUDE.md** - AI context file for Claude Code assistance
+- **INITIAL.md** - Project requirements template
+- Smart code generation with AI awareness
+
+### ☁️ Cloudflare Services Support
+- **D1 Database** - SQLite at the edge
+- **KV Storage** - Key-value store
+- **R2 Storage** - S3-compatible object storage
+- **Durable Objects** - Stateful serverless
+- **Queues** - Message queuing
+
+### 🔧 Improvements
+- Fixed template placeholder replacement
+- Better dependency management
+- Use `.dev.vars` instead of `.env`
+- Graceful cancellation handling
+- Detailed service setup instructions
 
 ## 🏗️ Project Structure
 
@@ -122,6 +152,27 @@ Created endpoints:
 - DELETE /api/products/{id} - Delete product
 ```
 
+## 🤖 Working with Claude Code
+
+Generated projects include AI-powered development support:
+
+### CLAUDE.md
+Provides context for Claude Code to understand your project:
+- Project structure guidelines
+- Code style conventions  
+- Cloudflare Workers best practices
+- Development commands
+
+### INITIAL.md
+Template for defining project requirements:
+- Feature specifications
+- API design
+- Data models
+- Environment variables
+- External APIs and documentation
+
+Simply open your project in Claude Code and it will automatically understand your codebase structure and requirements!
+
 ## 🚀 Development & Deployment
 
 ### Local Development
@@ -156,28 +207,55 @@ npm run deploy:production
 
 ## 🔧 Configuration
 
-### Database Support
+### Cloudflare Services
 
-If you enable database configuration, a `.env.example` file will be created:
+When you select Cloudflare services during setup, the `wrangler.toml` will be automatically configured:
 
-```env
-DB_HOST=
-DB_PORT=
-DB_NAME=
-DB_USER=
-DB_PASSWORD=
+```toml
+# D1 Database
+[[d1_databases]]
+binding = "DB"
+database_name = "my-app-db"
+database_id = "YOUR_DATABASE_ID"
+
+# KV Namespace
+[[kv_namespaces]]
+binding = "KV"
+id = "YOUR_KV_NAMESPACE_ID"
+
+# R2 Bucket
+[[r2_buckets]]
+binding = "BUCKET"
+bucket_name = "my-app-bucket"
 ```
 
-### Environment Types
+### Environment Variables
 
-All environment variables are fully typed:
+Local development secrets go in `.dev.vars`:
+
+```bash
+# Copy the example file
+cp .dev.vars.example .dev.vars
+
+# For production
+wrangler secret put JWT_SECRET --env production
+```
+
+### Type Safety
+
+All bindings and environment variables are fully typed:
 
 ```typescript
 // src/types/env.ts
 export interface Env {
-  // Your environment variables
-  API_KEY: string;
-  DB_URL?: string;
+  // Cloudflare Bindings
+  DB?: D1Database;
+  KV?: KVNamespace;
+  BUCKET?: R2Bucket;
+  
+  // Environment Variables
+  JWT_SECRET?: string;
+  API_KEY?: string;
 }
 ```
 

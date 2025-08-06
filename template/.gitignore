@@ -1,5 +1,3 @@
-.claude/
-CLAUDE.md
 node_modules/
 .dev.vars
 .wrangler/
