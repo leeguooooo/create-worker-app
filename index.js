@@ -252,8 +252,12 @@ API_KEY=your-api-key-here
     fs.writeFileSync(openApiPath, openApiContent);
   }
 
-  // Update src/index.ts based on options
+  // Update src/index.ts - replace placeholders and handle options
   let indexContent = fs.readFileSync(path.join(projectPath, 'src/index.ts'), 'utf8');
+  
+  // Replace placeholders
+  indexContent = indexContent.replace(/\{\{name\}\}/g, projectName);
+  indexContent = indexContent.replace(/\{\{description\}\}/g, answers.description || 'A Cloudflare Worker application');
   
   if (!answers.useOpenAPI) {
     // Remove OpenAPI imports and routes
