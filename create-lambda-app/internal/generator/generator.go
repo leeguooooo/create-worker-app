@@ -3,7 +3,6 @@ package generator
 import (
 	"bytes"
 	"fmt"
-	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -11,14 +10,27 @@ import (
 	"text/template"
 	"time"
 
-	"create-lambda-app/internal/templates"
+	"github.com/leeguooooo/create-lambda-app/internal/templates"
 )
+
+// getGitHubUsername attempts to get the GitHub username from git config
+func getGitHubUsername() string {
+	cmd := exec.Command("git", "config", "--get", "user.name")
+	output, err := cmd.Output()
+	if err == nil && len(output) > 0 {
+		username := strings.TrimSpace(string(output))
+		// Convert to lowercase and replace spaces with hyphens
+		username = strings.ToLower(strings.ReplaceAll(username, " ", "-"))
+		return username
+	}
+	return "myusername"
+}
 
 // Generate creates a new Lambda project based on the configuration
 func Generate(config *Config) error {
 	// Set default module name if not provided
 	if config.Module == "" {
-		config.Module = fmt.Sprintf("github.com/yourusername/%s", config.Name)
+		config.Module = fmt.Sprintf("github.com/%s/%s", getGitHubUsername(), config.Name)
 	}
 
 	// Create project directory
@@ -285,7 +297,13 @@ func generateSAMConfig(projectPath string, config *Config) error {
 func generateCDKConfig(projectPath string, config *Config) error {
 	// Create CDK app structure
 	cdkDir := filepath.Join(projectPath, "cdk")
-	if err := os.MkdirAll(cdkDir, 0755); err != nil {
+	if err := os.MkdirAll(filepath.Join(cdkDir, "lib"), 0755); err != nil {
+		return err
+	}
+	if err := os.MkdirAll(filepath.Join(cdkDir, "bin"), 0755); err != nil {
+		return err
+	}
+	if err := os.MkdirAll(filepath.Join(cdkDir, "test"), 0755); err != nil {
 		return err
 	}
 
@@ -329,6 +347,9 @@ func generateTerraformConfig(projectPath string, config *Config) error {
 	// Create Terraform structure
 	tfDir := filepath.Join(projectPath, "terraform")
 	if err := os.MkdirAll(filepath.Join(tfDir, "modules/lambda"), 0755); err != nil {
+		return err
+	}
+	if err := os.MkdirAll(filepath.Join(tfDir, "environments"), 0755); err != nil {
 		return err
 	}
 
@@ -489,6 +510,15 @@ func generateFile(path, templateContent string, config *Config) error {
 		return fmt.Errorf("failed to create directory %s: %w", dir, err)
 	}
 
+	// Special handling for GitHub Actions files - don't parse as templates
+	if strings.Contains(path, ".github/workflows/") {
+		// Just write the content directly without template parsing
+		if err := os.WriteFile(path, []byte(templateContent), 0644); err != nil {
+			return fmt.Errorf("failed to write file %s: %w", path, err)
+		}
+		return nil
+	}
+
 	// Parse and execute template
 	tmpl, err := template.New(filepath.Base(path)).Parse(templateContent)
 	if err != nil {
@@ -526,21 +556,30 @@ func createMetadataFile(projectPath string, config *Config) error {
 func InitGit(projectPath string) error {
 	cmd := exec.Command("git", "init")
 	cmd.Dir = projectPath
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
-		return err
+		return fmt.Errorf("failed to initialize git repository: %w", err)
 	}
 
 	// Add all files
 	cmd = exec.Command("git", "add", ".")
 	cmd.Dir = projectPath
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
-		return err
+		return fmt.Errorf("failed to add files to git: %w", err)
 	}
 
 	// Initial commit
 	cmd = exec.Command("git", "commit", "-m", "Initial commit from create-lambda-app")
 	cmd.Dir = projectPath
-	return cmd.Run()
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to create initial commit: %w", err)
+	}
+	return nil
 }
 
 // InstallDependencies runs go mod download in the project directory

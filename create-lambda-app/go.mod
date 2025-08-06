@@ -1,4 +1,4 @@
-module create-lambda-app
+module github.com/leeguooooo/create-lambda-app
 
 go 1.21
 

@@ -4,14 +4,13 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
-	"create-lambda-app/internal/generator"
-	"create-lambda-app/internal/prompts"
-	"create-lambda-app/internal/templates"
+	"github.com/leeguooooo/create-lambda-app/internal/generator"
 )
 
 var (
@@ -68,8 +67,10 @@ func run(cmd *cobra.Command, args []string) error {
 
 	// Validate project path
 	projectPath := filepath.Join(".", config.Name)
-	if _, err := os.Stat(projectPath); !os.IsNotExist(err) {
+	if _, err := os.Stat(projectPath); err == nil {
 		return fmt.Errorf("directory %s already exists", config.Name)
+	} else if !os.IsNotExist(err) {
+		return fmt.Errorf("error checking directory %s: %w", config.Name, err)
 	}
 
 	// Create project
@@ -141,8 +142,14 @@ func getProjectConfig(cmd *cobra.Command, args []string) (*generator.Config, err
 		}
 	}
 
-	// Normalize project name
+	// Normalize and validate project name
 	config.Name = strings.ToLower(strings.ReplaceAll(config.Name, " ", "-"))
+	
+	// Validate project name
+	validName := regexp.MustCompile(`^[a-z][a-z0-9-]*$`)
+	if !validName.MatchString(config.Name) {
+		return nil, fmt.Errorf("project name must start with a letter and contain only lowercase letters, numbers, and hyphens")
+	}
 
 	// Get description
 	if desc, _ := cmd.Flags().GetString("description"); desc != "" {
@@ -162,12 +169,18 @@ func getProjectConfig(cmd *cobra.Command, args []string) (*generator.Config, err
 	} else {
 		if err := survey.AskOne(&survey.Select{
 			Message: "Choose deployment tool:",
-			Options: []string{"sam", "cdk", "serverless", "terraform"},
-			Default: "sam",
-			Help:    "SAM: AWS native, CDK: Infrastructure as code, Serverless: Framework, Terraform: Multi-cloud",
+			Options: []string{
+				"sam (AWS Serverless Application Model - AWS native, simple configuration)",
+				"cdk (AWS Cloud Development Kit - TypeScript/Python, programmable infrastructure)",
+				"serverless (Serverless Framework - Multi-cloud, large plugin ecosystem)",
+				"terraform (HashiCorp Terraform - Multi-provider, declarative infrastructure)",
+			},
+			Default: "sam (AWS Serverless Application Model - AWS native, simple configuration)",
 		}, &config.DeploymentTool); err != nil {
 			return nil, err
 		}
+		// Extract the short form
+		config.DeploymentTool = strings.Split(config.DeploymentTool, " ")[0]
 	}
 
 	// Get features
@@ -180,17 +193,17 @@ func getProjectConfig(cmd *cobra.Command, args []string) (*generator.Config, err
 		if err := survey.AskOne(&survey.MultiSelect{
 			Message: "Select features to include:",
 			Options: []string{
-				"api (API Gateway integration)",
-				"dynamodb (DynamoDB support)",
-				"sqs (SQS queue processing)",
-				"sns (SNS event handling)",
-				"s3 (S3 bucket operations)",
-				"cognito (Authentication)",
-				"secrets (Secrets Manager)",
-				"eventbridge (EventBridge rules)",
-				"stepfunctions (Step Functions)",
+				"api (API Gateway - REST APIs with routing and validation)",
+				"dynamodb (DynamoDB - NoSQL database for user/room data)",
+				"sqs (SQS - Message queue for async processing)",
+				"sns (SNS - Pub/sub messaging for notifications)",
+				"s3 (S3 - Object storage for files/media)",
+				"cognito (Cognito - User authentication and authorization)",
+				"secrets (Secrets Manager - Store API keys and credentials)",
+				"eventbridge (EventBridge - Event-driven triggers)",
+				"stepfunctions (Step Functions - Workflow orchestration)",
 			},
-			Default: []string{"api"},
+			Default: []string{"api (API Gateway - REST APIs with routing and validation)"},
 		}, &selectedFeatures); err != nil {
 			return nil, err
 		}
@@ -213,10 +226,12 @@ func getProjectConfig(cmd *cobra.Command, args []string) (*generator.Config, err
 			"simple (Simple handler-based structure)",
 			"ddd (Domain-Driven Design)",
 		},
-		Default: "clean",
+		Default: "clean (Clean Architecture with use cases)",
 	}, &config.Architecture); err != nil {
 		return nil, err
 	}
+	// Extract the short form
+	config.Architecture = strings.Split(config.Architecture, " ")[0]
 
 	// Testing framework
 	if err := survey.AskOne(&survey.Select{
@@ -226,10 +241,12 @@ func getProjectConfig(cmd *cobra.Command, args []string) (*generator.Config, err
 			"standard (Standard library only)",
 			"ginkgo (BDD-style testing)",
 		},
-		Default: "testify",
+		Default: "testify (Assertions and mocks)",
 	}, &config.TestingFramework); err != nil {
 		return nil, err
 	}
+	// Extract the short form
+	config.TestingFramework = strings.Split(config.TestingFramework, " ")[0]
 
 	return config, nil
 }

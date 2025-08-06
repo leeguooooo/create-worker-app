@@ -26,6 +26,12 @@ async function init() {
       message: 'Project name:',
       initial: 'my-worker-app'
     });
+    
+    if (!response.projectName) {
+      console.log(yellow('\n✖ Operation cancelled'));
+      process.exit(0);
+    }
+    
     projectName = response.projectName;
     targetDir = projectName;
   }
@@ -45,20 +51,39 @@ async function init() {
       initial: 'A Cloudflare Worker application'
     },
     {
-      type: 'confirm',
-      name: 'useDatabase',
-      message: 'Will you need database configuration?',
-      initial: false
+      type: 'multiselect',
+      name: 'features',
+      message: 'Select Cloudflare services to use:',
+      choices: [
+        { title: 'D1 Database (SQLite)', value: 'd1', selected: false },
+        { title: 'KV Storage', value: 'kv', selected: false },
+        { title: 'R2 Object Storage', value: 'r2', selected: false },
+        { title: 'Durable Objects', value: 'do', selected: false },
+        { title: 'Queues', value: 'queues', selected: false }
+      ],
+      hint: 'Space to select, Enter to confirm'
     },
     {
       type: 'confirm',
       name: 'useOpenAPI',
       message: 'Include OpenAPI/Swagger documentation?',
       initial: true
+    },
+    {
+      type: 'confirm',
+      name: 'useAuth',
+      message: 'Include authentication middleware?',
+      initial: false
     }
   ];
 
   const answers = await prompts(questions);
+  
+  // Check if user cancelled
+  if (answers.description === undefined) {
+    console.log(yellow('\n✖ Operation cancelled'));
+    process.exit(0);
+  }
 
   console.log(blue('\n📁 Creating project...\n'));
 
@@ -81,11 +106,11 @@ async function init() {
     timestamp: new Date().toISOString()
   };
 
-  // Add OpenAPI dependencies if selected
-  if (answers.useOpenAPI) {
-    packageJson.dependencies['@hono/zod-openapi'] = '^0.19.8';
-    packageJson.dependencies['@hono/swagger-ui'] = '^0.5.2';
-    packageJson.dependencies['zod'] = '^3.25.67';
+  // Remove OpenAPI dependencies if not selected
+  if (!answers.useOpenAPI) {
+    delete packageJson.dependencies['@hono/zod-openapi'];
+    delete packageJson.dependencies['@hono/swagger-ui'];
+    delete packageJson.dependencies['zod'];
   }
 
   fs.writeFileSync(
@@ -93,16 +118,92 @@ async function init() {
     JSON.stringify(packageJson, null, 2)
   );
 
-  // Create .env.example if database is needed
-  if (answers.useDatabase) {
-    const envExample = `# Database configuration
-DB_HOST=
-DB_PORT=
-DB_NAME=
-DB_USER=
-DB_PASSWORD=`;
-    fs.writeFileSync(path.join(projectPath, '.env.example'), envExample);
+  // Update wrangler.toml based on selected features
+  let wranglerContent = fs.readFileSync(path.join(projectPath, 'wrangler.toml'), 'utf8');
+  
+  // Add configuration for selected Cloudflare services
+  const features = answers.features || [];
+  let bindingsConfig = '\n# Cloudflare service bindings\n';
+  
+  if (features.includes('d1')) {
+    bindingsConfig += `
+# D1 Database binding
+[[d1_databases]]
+binding = "DB" # Available as env.DB
+database_name = "${projectName}-db"
+database_id = "YOUR_DATABASE_ID" # Replace with actual D1 database ID
+`;
   }
+  
+  if (features.includes('kv')) {
+    bindingsConfig += `
+# KV Namespace binding
+[[kv_namespaces]]
+binding = "KV" # Available as env.KV
+id = "YOUR_KV_NAMESPACE_ID" # Replace with actual KV namespace ID
+`;
+  }
+  
+  if (features.includes('r2')) {
+    bindingsConfig += `
+# R2 Bucket binding
+[[r2_buckets]]
+binding = "BUCKET" # Available as env.BUCKET
+bucket_name = "${projectName}-bucket"
+`;
+  }
+  
+  if (features.includes('do')) {
+    bindingsConfig += `
+# Durable Objects binding
+[durable_objects]
+bindings = [
+  { name = "COUNTER", class_name = "Counter", script_name = "" }
+]
+`;
+  }
+  
+  if (features.includes('queues')) {
+    bindingsConfig += `
+# Queue binding
+[[queues.producers]]
+binding = "QUEUE" # Available as env.QUEUE
+queue = "${projectName}-queue"
+`;
+  }
+  
+  // Always replace {{name}} placeholder
+  wranglerContent = wranglerContent.replace(/\{\{name\}\}/g, projectName);
+  
+  if (features.length > 0) {
+    wranglerContent += bindingsConfig;
+  }
+  
+  fs.writeFileSync(path.join(projectPath, 'wrangler.toml'), wranglerContent);
+  
+  // Create .dev.vars.example file for local development secrets
+  if (answers.useAuth) {
+    const devVarsExample = `# Local development secrets (copy to .dev.vars)
+# For production, use: wrangler secret put SECRET_NAME --env production
+
+JWT_SECRET=your-jwt-secret-here
+API_KEY=your-api-key-here
+`;
+    fs.writeFileSync(path.join(projectPath, '.dev.vars.example'), devVarsExample);
+    
+    // Add .dev.vars to .gitignore
+    let gitignoreContent = fs.readFileSync(path.join(projectPath, '.gitignore'), 'utf8');
+    if (!gitignoreContent.includes('.dev.vars')) {
+      gitignoreContent += '\n# Local development secrets\n.dev.vars\n';
+      fs.writeFileSync(path.join(projectPath, '.gitignore'), gitignoreContent);
+    }
+  }
+
+  // Update README.md - replace placeholders
+  let readmeContent = fs.readFileSync(path.join(projectPath, 'README.md'), 'utf8');
+  readmeContent = readmeContent.replace(/\{\{name\}\}/g, projectName);
+  readmeContent = readmeContent.replace(/\{\{description\}\}/g, answers.description || 'A Cloudflare Worker application');
+  fs.writeFileSync(path.join(projectPath, 'README.md'), readmeContent);
 
   // Update src/index.ts based on options
   let indexContent = fs.readFileSync(path.join(projectPath, 'src/index.ts'), 'utf8');
@@ -120,7 +221,38 @@ DB_PASSWORD=`;
   console.log('Next steps:\n');
   console.log(cyan(`  cd ${targetDir}`));
   console.log(cyan('  npm install'));
-  console.log(cyan('  npm run dev\n'));
+  
+  // Show service setup instructions
+  if (features.length > 0) {
+    console.log(cyan('\n⚙️  Configure Cloudflare services:'));
+    
+    if (features.includes('d1')) {
+      console.log(yellow('\n  D1 Database:'));
+      console.log('    1. Create database: wrangler d1 create <database-name>');
+      console.log('    2. Update database_id in wrangler.toml');
+      console.log('    3. Run migrations: wrangler d1 migrations apply <database-name>');
+    }
+    
+    if (features.includes('kv')) {
+      console.log(yellow('\n  KV Namespace:'));
+      console.log('    1. Create namespace: wrangler kv:namespace create <namespace-name>');
+      console.log('    2. Update id in wrangler.toml with the namespace ID');
+    }
+    
+    if (features.includes('r2')) {
+      console.log(yellow('\n  R2 Bucket:'));
+      console.log('    1. Create bucket: wrangler r2 bucket create <bucket-name>');
+      console.log('    2. Bucket name is already configured in wrangler.toml');
+    }
+  }
+  
+  if (answers.useAuth) {
+    console.log(yellow('\n🔐 Authentication setup:'));
+    console.log('    1. Copy .dev.vars.example to .dev.vars for local development');
+    console.log('    2. For production: wrangler secret put JWT_SECRET --env production');
+  }
+  
+  console.log(cyan('\n  npm run dev\n'));
 
   if (answers.useOpenAPI) {
     console.log(yellow('📚 API documentation will be available at http://localhost:8787/docs\n'));
